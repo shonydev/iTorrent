@@ -24,6 +24,8 @@ El servidor escucha en el puerto `3000` por defecto y guarda las descargas en `.
 
 ## GitHub Pages
 
+**Aplicación publicada:** https://shonydev.github.io/iTorrent/
+
 GitHub Pages puede alojar únicamente la interfaz estática que genera `npm run build`; no ejecuta `server.js`, Node.js ni WebTorrent. Por eso, el sitio publicado en Pages sirve para comprobar la PWA/interfaz, pero las funciones de agregar torrents, consultar progreso y hacer streaming requieren que el backend esté desplegado aparte y que la interfaz apunte a ese servidor.
 
 El workflow de GitHub Actions publica `dist/` en Pages bajo `/iTorrent/`.
