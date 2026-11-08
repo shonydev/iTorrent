@@ -221,7 +221,7 @@
     </form>
     <div class="file-upload-row">
       <label for="torrent-file">O SUBÍ UN ARCHIVO .TORRENT</label>
-      <input id="torrent-file" type="file" accept=".torrent,application/x-bittorrent" onchange={addTorrentFile} disabled={!serverReady || busy} />
+      <input id="torrent-file" type="file" accept=".torrent,application/x-bittorrent" onchange={addTorrentFile} disabled={busy} />
     </div>
     <p class="hint"><span>↳</span> Solo conecta con clientes que soporten WebTorrent / WebRTC.</p>
   </section>
