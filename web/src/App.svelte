@@ -1,32 +1,20 @@
-<script lang="ts">
-  import { onMount } from 'svelte';
-  import { tick } from 'svelte';
+ <script lang="ts">
+  import { onMount, tick } from 'svelte';
   import WebTorrent from 'webtorrent';
 
   type TorrentFile = {
-    name: string;
-    path: string;
-    length: number;
-    progress: number;
+    name: string; path: string; length: number; progress: number;
     streamTo: (element: HTMLMediaElement) => HTMLMediaElement;
   };
-
   type TorrentItem = {
-    infoHash: string;
-    name: string;
-    progress: number;
-    downloadSpeed: number;
-    uploadSpeed: number;
-    numPeers: number;
-    downloaded: number;
-    length: number;
-    files: TorrentFile[];
-    magnetURI: string;
-    destroy: (callback?: (error?: Error) => void) => void;
-    on: (event: string, callback: () => void) => void;
+    infoHash: string; name: string; progress: number; downloadSpeed: number;
+    uploadSpeed: number; numPeers: number; downloaded: number; length: number;
+    files: TorrentFile[]; magnetURI: string;
+    destroy: (options?: object, callback?: (error?: Error) => void) => void;
+    on: (event: string, callback: (...args: any[]) => void) => void;
   };
 
-  let client: InstanceType<typeof WebTorrent> | null = null;
+  let client: any = null;
   let serverReady = $state(false);
   let supported = $state(true);
   let busy = $state(false);
@@ -52,25 +40,21 @@
     try {
       const value = JSON.parse(localStorage.getItem(savedKey) || '[]');
       return Array.isArray(value) ? value.filter((item) => typeof item === 'string') : [];
-    } catch {
-      return [];
-    }
+    } catch { return []; }
   }
-
   function persistMagnets() {
     localStorage.setItem(savedKey, JSON.stringify(torrents.map((torrent) => torrent.magnetURI)));
   }
-
   function refresh() {
-    if (!client) return;
-    torrents = [...client.torrents] as TorrentItem[];
+    if (client) torrents = [...client.torrents] as TorrentItem[];
   }
-
   function attachTorrent(torrent: TorrentItem) {
     torrent.on('download', refresh);
     torrent.on('upload', refresh);
     torrent.on('done', refresh);
     torrent.on('wire', refresh);
+    torrent.on('error', (cause: Error) => { error = cause.message; refresh(); persistMagnets(); });
+    torrent.on('warning', (cause: Error) => { notice = cause.message; });
     refresh();
     persistMagnets();
   }
@@ -86,7 +70,6 @@
       error = 'Ese torrent ya está en la lista.';
       return;
     }
-
     error = '';
     busy = true;
     try {
@@ -95,32 +78,22 @@
       notice = 'Buscando peers compatibles con WebRTC…';
     } catch (cause) {
       error = cause instanceof Error ? cause.message : 'No se pudo agregar el torrent.';
-    } finally {
-      busy = false;
-    }
+    } finally { busy = false; }
   }
 
   function removeTorrent(torrent: TorrentItem) {
     if (!confirm(`¿Querés quitar “${torrent.name}” de esta sesión?`)) return;
-    if (selected?.torrent.infoHash === torrent.infoHash) selected = null;
-    torrent.destroy(() => {
-      refresh();
-      persistMagnets();
-    });
+    if (selected?.torrent.infoHash === torrent.infoHash) closePlayer();
+    torrent.destroy({}, () => { refresh(); persistMagnets(); });
   }
 
   async function playFile(torrent: TorrentItem, file: TorrentFile) {
-    if (!serverReady) {
-      error = 'El reproductor todavía se está inicializando.';
-      return;
-    }
+    if (!serverReady) { error = 'El reproductor todavía se está inicializando.'; return; }
     selected = { torrent, file };
     await tick();
     if (!videoElement) return;
     file.streamTo(videoElement);
-    videoElement.play().catch(() => {
-      notice = 'Tocá reproducir para iniciar el video.';
-    });
+    videoElement.play().catch(() => { notice = 'Tocá reproducir para iniciar el video.'; });
   }
 
   function closePlayer() {
@@ -142,30 +115,31 @@
         notice = 'Este navegador no ofrece soporte WebRTC para torrents.';
         return;
       }
-
       try {
         const base = import.meta.env.BASE_URL;
-        const registration = await navigator.serviceWorker.register(`${base}sw.js`, {
-          scope: base
-        });
+        const registration = await navigator.serviceWorker.register(`${base}sw.js`, { scope: base });
         await navigator.serviceWorker.ready;
+
+        if (!navigator.serviceWorker.controller) {
+          await new Promise<void>((resolve) => {
+            navigator.serviceWorker.addEventListener('controllerchange', () => resolve(), { once: true });
+            window.setTimeout(resolve, 2500);
+          });
+        }
         if (!alive) return;
+        if (!navigator.serviceWorker.controller) {
+          throw new Error('El navegador no activó el Service Worker. Recargá la página para habilitar el streaming.');
+        }
 
         client = new WebTorrent();
-        client.on('error', (cause: Error) => {
-          error = cause.message;
-        });
+        client.on('error', (cause: Error) => { error = cause.message; });
         client.createServer({ controller: registration });
         serverReady = true;
         notice = 'Cliente listo. Agregá un magnet para empezar.';
 
-        const previous = savedMagnets();
-        previous.forEach((uri) => {
-          try {
-            client?.add(uri, (torrent: TorrentItem) => attachTorrent(torrent));
-          } catch (cause) {
-            error = cause instanceof Error ? cause.message : 'No se pudo restaurar un torrent.';
-          }
+        savedMagnets().forEach((uri) => {
+          try { client.add(uri, (torrent: TorrentItem) => attachTorrent(torrent)); }
+          catch (cause) { error = cause instanceof Error ? cause.message : 'No se pudo restaurar un torrent.'; }
         });
         refresh();
         interval = window.setInterval(refresh, 1000);
@@ -191,8 +165,7 @@
 <main class="shell">
   <header class="topbar">
     <a class="brand" href="./" aria-label="iTorrent inicio">
-      <span class="brand-mark">i</span>
-      <span>iTorrent</span>
+      <span class="brand-mark">i</span><span>iTorrent</span>
     </a>
     <span class:online={serverReady} class="status"><i></i>{serverReady ? 'P2P listo' : 'Iniciando'}</span>
   </header>
@@ -217,23 +190,16 @@
   {#if !supported}
     <div class="message warning">Tu navegador no tiene soporte WebRTC para esta función. Probá con una versión actualizada de Safari, Chrome o Firefox.</div>
   {/if}
-  {#if error}
-    <div class="message error">{error}</div>
-  {/if}
+  {#if error}<div class="message error">{error}</div>{/if}
 
   <section class="library">
     <div class="section-heading">
-      <div>
-        <p class="eyebrow">BIBLIOTECA</p>
-        <h2>Tus descargas <span>{torrents.length}</span></h2>
-      </div>
+      <div><p class="eyebrow">BIBLIOTECA</p><h2>Tus descargas <span>{torrents.length}</span></h2></div>
       <p class="library-status">{notice}</p>
     </div>
-
     {#if torrents.length === 0}
       <div class="empty">
-        <div class="empty-icon">⇩</div>
-        <h3>Tu biblioteca está vacía</h3>
+        <div class="empty-icon">⇩</div><h3>Tu biblioteca está vacía</h3>
         <p>Cuando agregues un magnet, el torrent va a aparecer acá.</p>
       </div>
     {:else}
@@ -242,16 +208,10 @@
           <article class="torrent-card">
             <div class="torrent-title">
               <div class="torrent-icon">◈</div>
-              <div class="torrent-name">
-                <h3>{torrent.name || 'Obteniendo metadatos…'}</h3>
-                <p>{torrent.infoHash}</p>
-              </div>
+              <div class="torrent-name"><h3>{torrent.name || 'Obteniendo metadatos…'}</h3><p>{torrent.infoHash}</p></div>
               <button class="icon-button" aria-label="Quitar torrent" onclick={() => removeTorrent(torrent)}>×</button>
             </div>
-            <div class="progress-meta">
-              <strong>{percent(torrent.progress).toFixed(1)}%</strong>
-              <span>{formatBytes(torrent.downloaded)} / {formatBytes(torrent.length)}</span>
-            </div>
+            <div class="progress-meta"><strong>{percent(torrent.progress).toFixed(1)}%</strong><span>{formatBytes(torrent.downloaded)} / {formatBytes(torrent.length)}</span></div>
             <div class="progress-track"><div class="progress-fill" style:width="{percent(torrent.progress)}%"></div></div>
             <div class="stats">
               <span><b>↓</b> {formatSpeed(torrent.downloadSpeed)}</span>
@@ -263,9 +223,7 @@
               <div class="files">
                 {#each torrent.files.filter((file) => videoPattern.test(file.name)) as file}
                   <button class="file-button" onclick={() => playFile(torrent, file)}>
-                    <span class="play-icon">▶</span>
-                    <span class="file-name">{file.name}</span>
-                    <span class="file-size">{formatBytes(file.length)}</span>
+                    <span class="play-icon">▶</span><span class="file-name">{file.name}</span><span class="file-size">{formatBytes(file.length)}</span>
                   </button>
                 {/each}
               </div>
@@ -285,10 +243,7 @@
 {#if selected}
   <div class="player-overlay">
     <div class="player-header">
-      <div>
-        <p>REPRODUCIENDO</p>
-        <h2>{selected.file.name}</h2>
-      </div>
+      <div><p>REPRODUCIENDO</p><h2>{selected.file.name}</h2></div>
       <button class="close-player" onclick={closePlayer}>Cerrar <span>×</span></button>
     </div>
     <video bind:this={videoElement} controls playsinline autoplay></video>
