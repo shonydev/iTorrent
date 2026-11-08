@@ -1,37 +1,48 @@
 # iTorrent
 
-PWA para agregar enlaces magnet y reproducir archivos de video mediante un servidor WebTorrent propio.
+PWA de torrents que corre directamente en el navegador, sin backend propio. El cliente usa WebTorrent y WebRTC para conectarse con otros peers compatibles.
 
 ## Requisitos
 
 - Node.js 20 o superior.
-- Un servidor accesible por HTTPS para usar la PWA desde iPhone.
+- Un navegador moderno con WebRTC y Service Workers.
+- HTTPS en producción (GitHub Pages ya lo ofrece).
 
-## Desarrollo y ejecución
+## Desarrollo
 
 ```bash
 npm install
 npm run dev
 ```
 
-En otra terminal, iniciá el backend con un token seguro:
+Para generar y previsualizar la versión de producción:
 
 ```bash
-TOKEN=una-clave-larga npm start
+npm run build
+npm run preview
 ```
 
-El servidor escucha en el puerto `3000` por defecto y guarda las descargas en `./downloads` (o en la ruta indicada por `DOWNLOADS`). Para acceder desde iPhone podés publicar el puerto mediante Tailscale Serve o Cloudflare Tunnel y abrir la URL HTTPS en Safari.
+## Arquitectura client-only
 
-## GitHub Pages
+- **WebTorrent en el navegador:** descubrimiento y transferencia P2P mediante WebRTC.
+- **Service Worker:** expone el stream local del torrent al reproductor HTML5 y soporta solicitudes por rangos.
+- **localStorage:** recuerda los enlaces magnet para intentar restaurarlos cuando volvés a abrir la PWA.
+- **GitHub Pages:** aloja únicamente archivos estáticos; no se necesita un proceso Node.js ni un servidor de torrents.
 
-**Aplicación publicada:** https://shonydev.github.io/iTorrent/
+Los datos descargados no se garantizan como persistentes entre sesiones: el navegador puede liberar almacenamiento y el motor puede volver a descargar piezas al restaurar un magnet. La descarga tampoco continúa de forma fiable cuando Safari/iOS suspende la PWA en segundo plano.
 
-GitHub Pages puede alojar únicamente la interfaz estática que genera `npm run build`; no ejecuta `server.js`, Node.js ni WebTorrent. Por eso, el sitio publicado en Pages sirve para comprobar la PWA/interfaz, pero las funciones de agregar torrents, consultar progreso y hacer streaming requieren que el backend esté desplegado aparte y que la interfaz apunte a ese servidor.
+## Limitaciones de la red
 
-El workflow de GitHub Actions publica `dist/` en Pages bajo `/iTorrent/`.
+WebTorrent en navegador usa WebRTC: no se conecta directamente a peers BitTorrent convencionales por TCP/UDP. El torrent necesita peers o seeders compatibles con WebTorrent/WebRTC y trackers WebSocket cuando corresponda. Si un magnet solo tiene peers tradicionales, puede quedarse sin conexiones.
 
-## Formatos
+## Publicación
 
-En iPhone Safari, priorizá MP4/M4V/MOV con códecs compatibles (H.264/HEVC + AAC). Otros contenedores pueden no reproducirse.
+La aplicación se publica en GitHub Pages:
+
+https://shonydev.github.io/iTorrent/
+
+El workflow de GitHub Actions genera `dist/` y publica el sitio bajo `/iTorrent/`.
+
+## Uso responsable
 
 Usalo únicamente con contenido que tengas derecho a descargar.
