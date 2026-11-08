@@ -62,7 +62,7 @@
   async function addTorrent(value = magnet) {
     const uri = value.trim();
     if (!uri || !client) return;
-    if (!uri.startsWith('magnet:?') && !/^https?:\/\//i.test(uri)) {
+    if (!uri.startsWith('magnet:?') && !/^https?:\\/\\//i.test(uri)) {
       error = 'Pegá un magnet link válido o la URL de un archivo .torrent.';
       return;
     }
@@ -79,6 +79,36 @@
     } catch (cause) {
       error = cause instanceof Error ? cause.message : 'No se pudo agregar el torrent.';
     } finally { busy = false; }
+  }
+
+  function addTorrentFile(event: Event) {
+    const input = event.currentTarget as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith('.torrent')) {
+      error = 'Seleccioná un archivo con extensión .torrent.';
+      input.value = '';
+      return;
+    }
+    if (!client) {
+      error = 'El cliente P2P todavía se está inicializando.';
+      input.value = '';
+      return;
+    }
+    error = '';
+    busy = true;
+    notice = `Leyendo ${file.name}…`;
+    try {
+      client.add(file, (torrent: TorrentItem) => {
+        attachTorrent(torrent);
+        notice = 'Torrent agregado. Buscando peers compatibles con WebRTC…';
+      });
+    } catch (cause) {
+      error = cause instanceof Error ? cause.message : 'No se pudo leer el archivo .torrent.';
+    } finally {
+      busy = false;
+      input.value = '';
+    }
   }
 
   function removeTorrent(torrent: TorrentItem) {
@@ -184,6 +214,10 @@
         <button type="submit" disabled={!serverReady || busy || !magnet.trim()}>{busy ? 'Agregando…' : 'Agregar torrent'}</button>
       </div>
     </form>
+    <div class="file-upload-row">
+      <label for="torrent-file">O SUBÍ UN ARCHIVO .TORRENT</label>
+      <input id="torrent-file" type="file" accept=".torrent,application/x-bittorrent" onchange={addTorrentFile} disabled={!serverReady || busy} />
+    </div>
     <p class="hint"><span>↳</span> Solo conecta con clientes que soporten WebTorrent / WebRTC.</p>
   </section>
 
