@@ -62,7 +62,7 @@
   async function addTorrent(value = magnet) {
     const uri = value.trim();
     if (!uri || !client) return;
-    if (!uri.startsWith('magnet:?') && !/^https?:\\/\\//i.test(uri)) {
+    if (!uri.startsWith('magnet:?') && !/^https?:\/\//i.test(uri)) {
       error = 'Pegá un magnet link válido o la URL de un archivo .torrent.';
       return;
     }
