@@ -1,0 +1,13 @@
+{
+  "name": "iTorrent",
+  "short_name": "iTorrent",
+  "description": "Cliente BitTorrent P2P para navegador",
+  "start_url": "/iTorrent/",
+  "scope": "/iTorrent/",
+  "display": "standalone",
+  "background_color": "#0b1020",
+  "theme_color": "#0b1020",
+  "icons": [
+    { "src": "/iTorrent/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
