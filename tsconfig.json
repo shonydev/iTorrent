@@ -1,8 +1,12 @@
 {
   "compilerOptions": {
-    "target": "ESNext", "module": "ESNext", "moduleResolution": "bundler",
-    "strict": true, "verbatimModuleSyntax": true, "skipLibCheck": true,
-    "types": ["svelte", "vite/client", "vite-plugin-pwa/client"]
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "verbatimModuleSyntax": true,
+    "skipLibCheck": true,
+    "types": ["svelte", "vite/client"]
   },
   "include": ["web/src"]
 }
