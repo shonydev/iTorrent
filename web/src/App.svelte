@@ -21,7 +21,7 @@
   let magnet = $state('');
   let torrents = $state<TorrentItem[]>([]);
   let selected = $state<{ torrent: TorrentItem; file: TorrentFile } | null>(null);
-  let videoElement: HTMLVideoElement;
+  let videoElement = $state<HTMLVideoElement>();
   let error = $state('');
   let notice = $state('Preparando el cliente P2P…');
 
