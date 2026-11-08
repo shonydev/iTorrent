@@ -22,6 +22,7 @@
   let torrents = $state<TorrentItem[]>([]);
   let selected = $state<{ torrent: TorrentItem; file: TorrentFile } | null>(null);
   let videoElement = $state<HTMLVideoElement>();
+  let torrentFileInput: HTMLInputElement | undefined;
   let error = $state('');
   let notice = $state('Preparando el cliente P2P…');
 
@@ -221,7 +222,19 @@
     </form>
     <div class="file-upload-row">
       <label for="torrent-file">O SUBÍ UN ARCHIVO .TORRENT</label>
-      <input id="torrent-file" type="file" accept=".torrent,application/x-bittorrent" onchange={addTorrentFile} disabled={busy} />
+      <input
+        bind:this={torrentFileInput}
+        id="torrent-file"
+        class="visually-hidden-file-input"
+        type="file"
+        accept=".torrent,application/x-bittorrent"
+        onchange={addTorrentFile}
+        disabled={busy}
+        aria-label="Seleccionar archivo torrent"
+      />
+      <button class="file-picker-button" type="button" onclick={() => torrentFileInput?.click()} disabled={busy}>
+        {busy ? 'Procesando archivo…' : 'Elegir archivo .torrent'}
+      </button>
     </div>
     <p class="hint"><span>↳</span> Solo conecta con clientes que soporten WebTorrent / WebRTC.</p>
   </section>
