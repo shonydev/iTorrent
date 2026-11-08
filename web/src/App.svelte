@@ -1,6 +1,6 @@
  <script lang="ts">
   import { onMount, tick } from 'svelte';
-  import WebTorrent from 'webtorrent';
+  import WebTorrent from 'webtorrent/dist/webtorrent.min.js';
 
   type TorrentFile = {
     name: string; path: string; length: number; progress: number;
