@@ -227,7 +227,6 @@
         id="torrent-file"
         class="visually-hidden-file-input"
         type="file"
-        accept=".torrent,application/x-bittorrent"
         onchange={addTorrentFile}
         disabled={busy}
         aria-label="Seleccionar archivo torrent"
