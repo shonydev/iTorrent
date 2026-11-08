@@ -93,3 +93,31 @@ footer p { margin:4px 0; }
   .stats { gap:8px 13px; }
   .player-overlay { padding:14px; }
 }
+
+
+.visually-hidden-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.file-picker-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  padding: 0 18px;
+  border: 1px solid #59658a;
+  border-radius: 10px;
+  color: #eef1fb;
+  background: #202a43;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.file-picker-button:disabled { cursor: not-allowed; opacity: .45; }
