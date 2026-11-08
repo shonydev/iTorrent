@@ -81,7 +81,7 @@
     } finally { busy = false; }
   }
 
-  function addTorrentFile(event: Event) {
+  async function addTorrentFile(event: Event) {
     const input = event.currentTarget as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
@@ -95,16 +95,21 @@
       input.value = '';
       return;
     }
+
     error = '';
     busy = true;
     notice = `Leyendo ${file.name}…`;
     try {
-      client.add(file, (torrent: TorrentItem) => {
+      // WebTorrent client.add expects the raw torrent bytes, not the File wrapper.
+      const torrentBytes = new Uint8Array(await file.arrayBuffer());
+      client.add(torrentBytes, (torrent: TorrentItem) => {
         attachTorrent(torrent);
         notice = 'Torrent agregado. Buscando peers compatibles con WebRTC…';
       });
+      notice = 'Archivo leído. Procesando metadatos del torrent…';
     } catch (cause) {
       error = cause instanceof Error ? cause.message : 'No se pudo leer el archivo .torrent.';
+      notice = 'No se pudo agregar el archivo.';
     } finally {
       busy = false;
       input.value = '';
